@@ -1,0 +1,5 @@
+{
+  "name": "Interior AI Designer",
+  "description": "Transform your room photos into different interior design styles using Gemini 2.5 Flash Image.",
+  "requestFramePermissions": []
+}

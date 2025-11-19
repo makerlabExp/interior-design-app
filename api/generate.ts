@@ -1,0 +1,1 @@
+// This file is no longer used. The application now runs client-side with a user-provided API key.
