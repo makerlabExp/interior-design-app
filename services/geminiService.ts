@@ -19,12 +19,12 @@ export const generateRoomDesign = async (
   imageFile: File, 
   style: DesignStyle, 
   customInstructions: string,
-  isRoomEmpty: boolean = false,
-  apiKey: string
+  isRoomEmpty: boolean = false
 ): Promise<string> => {
   try {
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      throw new Error("API Key is missing");
+      throw new Error("API Key is missing in process.env.API_KEY");
     }
 
     const ai = new GoogleGenAI({ apiKey });

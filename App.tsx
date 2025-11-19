@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSelector } from './components/StyleSelector';
 import { ImageUploader } from './components/ImageUploader';
 import { GeneratedResult } from './components/GeneratedResult';
-import { ApiKeyInput } from './components/ApiKeyInput';
 import { generateRoomDesign } from './services/geminiService';
 import { DesignStyle } from './types';
 import { STYLES } from './constants';
-import { Sparkles, ArrowLeft, Wand2, Sofa, Key } from 'lucide-react';
+import { Sparkles, ArrowLeft, Wand2, Sofa, Lock, Settings, ExternalLink } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<'upload' | 'style' | 'result'>('upload');
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
@@ -20,23 +18,59 @@ const App: React.FC = () => {
   const [isRoomEmpty, setIsRoomEmpty] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-        setApiKey(storedKey);
-    }
-  }, []);
+  // Check if API Key is configured in environment variables
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="max-w-lg w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl text-center">
+          <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-zinc-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Configuration Required</h1>
+          <p className="text-zinc-400 mb-8 leading-relaxed">
+            For security, the API Key is now managed via environment variables instead of manual entry. 
+            Please configure your deployment environment to proceed.
+          </p>
+          
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 text-left mb-8">
+             <div className="flex items-center gap-2 mb-4 text-indigo-400 font-medium">
+                <Settings className="w-4 h-4" />
+                <span>Setup Instructions</span>
+             </div>
+             
+             <div className="space-y-4 text-sm text-zinc-300">
+                <div>
+                  <p className="text-zinc-500 text-xs uppercase tracking-wider font-semibold mb-1">For Vercel Deployment</p>
+                  <p>Go to <strong>Project Settings</strong> &gt; <strong>Environment Variables</strong> and add:</p>
+                  <code className="block mt-2 bg-zinc-900 px-3 py-2 rounded border border-zinc-800 font-mono text-indigo-300">
+                    API_KEY=AIzaSy...
+                  </code>
+                </div>
+                
+                <div>
+                  <p className="text-zinc-500 text-xs uppercase tracking-wider font-semibold mb-1">For Local Development</p>
+                  <p>Create a <code className="text-zinc-200">.env</code> file in your project root containing:</p>
+                  <code className="block mt-2 bg-zinc-900 px-3 py-2 rounded border border-zinc-800 font-mono text-indigo-300">
+                    API_KEY=AIzaSy...
+                  </code>
+                </div>
+             </div>
+          </div>
 
-  const handleSetApiKey = (key: string) => {
-      localStorage.setItem('gemini_api_key', key);
-      setApiKey(key);
-  };
-
-  const handleClearKey = () => {
-      localStorage.removeItem('gemini_api_key');
-      setApiKey(null);
-      resetApp();
-  };
+          <a 
+            href="https://aistudio.google.com/app/apikey" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-indigo-400 transition-colors text-sm"
+          >
+            <span>Get a Gemini API Key</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const handleImageUpload = (file: File) => {
     setOriginalImage(file);
@@ -54,19 +88,19 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!originalImage || !selectedStyle || !apiKey) return;
+    if (!originalImage || !selectedStyle) return;
 
     setIsGenerating(true);
     setError(null);
 
     try {
-      const result = await generateRoomDesign(originalImage, selectedStyle, customPrompt, isRoomEmpty, apiKey);
+      const result = await generateRoomDesign(originalImage, selectedStyle, customPrompt, isRoomEmpty);
       setGeneratedImage(result);
       setCurrentStep('result');
     } catch (err) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : "Failed to generate the design.";
-      setError(errorMessage.includes('API Key') ? 'Invalid API Key or Quota exceeded.' : 'Failed to generate design. Please try again.');
+      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -82,10 +116,6 @@ const App: React.FC = () => {
     setIsRoomEmpty(false);
     setError(null);
   };
-
-  if (!apiKey) {
-      return <ApiKeyInput onSetApiKey={handleSetApiKey} />;
-  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center">
@@ -109,14 +139,6 @@ const App: React.FC = () => {
                 New Design
             </button>
             )}
-             <button 
-                onClick={handleClearKey}
-                className="text-xs bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5"
-                title="Change API Key"
-            >
-                <Key className="w-3 h-3" />
-                Reset Key
-            </button>
         </div>
       </header>
 
